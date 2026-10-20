@@ -1,0 +1,93 @@
+{
+  "recording_date": "2026-10-18",
+  "generated_at": "2026-10-18T10:06:14.272494+02:00",
+  "environment": {
+    "platform": "Linux-6.8.0-142-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "ros": "jazzy",
+    "gazebo": "8.15.0 (Harmonic)",
+    "ardupilot": "4.7.0 (1511f271)",
+    "mavros": "2.15.1",
+    "matplotlib": "3.6.3",
+    "ros_domain_id": 73,
+    "gz_partition": "lrs_a1_evidence_20261018",
+    "sitl_speedup": 1
+  },
+  "git": {
+    "base_commit": "c87b31d16a67251816dc97286a963795112376de",
+    "source_state": "Local working tree; source hashes identify the tested production files, not the base commit alone"
+  },
+  "checks": {
+    "workspace_build": "passed",
+    "clean_source_copy_build": "passed (not a fresh Git clone)",
+    "pytest": {
+      "command": "pytest -q assignment1_mission/test",
+      "passed": 57,
+      "duration_s": 20.01
+    },
+    "indoor": "DONE; disarmed",
+    "outdoor": "DONE; disarmed"
+  },
+  "outdoor_publication": {
+    "points": 2502,
+    "mean_hz": 17.019054684771227,
+    "median_interval_s": 0.05000615119934082,
+    "p95_interval_s": 0.12195038795471191,
+    "max_interval_s": 0.6499249935150146
+  },
+  "abort": {
+    "service_success": true,
+    "controller_state": "ABORT",
+    "response_to_rtl_s": 0.060120344161987305,
+    "setpoints_after_abort": 0,
+    "final_mode": "RTL",
+    "final_armed": false,
+    "maximum_local_altitude_m": 8.859999656677246
+  },
+  "sha256": {
+    "assignment1_mission/assignment1_mission/__init__.py": "79fc1c8b507ed13fee8bd6b1694237b99741763642e23c90c68e62cbc1322ab4",
+    "assignment1_mission/assignment1_mission/part01/__init__.py": "162f1d11f9325c57719c184c1fa4db8560197ad0f6d8fb2d79027c7599ade4ae",
+    "assignment1_mission/assignment1_mission/part01/plan_cli.py": "4a62fd50733573a0cc39f5e61ea9b9f6e8c83ac6440642cbda11296ad6eadb49",
+    "assignment1_mission/assignment1_mission/part01/planning.py": "8492296e23c5abfbf95e0a9a8907a7768291edc1412ce04f7a8bd8627b344739",
+    "assignment1_mission/assignment1_mission/part02/__init__.py": "3571daebae9f010f10f410b9584bf32f393e84df9b00f31079f5dcbc79ce194b",
+    "assignment1_mission/assignment1_mission/part02/control.py": "2badab7c7d7fd40330d6bd04d82cfd7998b90aeacddb546fa5611213328506df",
+    "assignment1_mission/assignment1_mission/part02/indoor.py": "6c1cefc14d6b694c9f6b5c9d85c3f9bd15fd69efd7994934a3b52f4227e2917f",
+    "assignment1_mission/assignment1_mission/part02/mission.py": "baecd98025c5fbec21f95594d9d8b3a17de27cbc113503fb3f7b9baa97d7099d",
+    "assignment1_mission/assignment1_mission/part03/__init__.py": "275168702578403190ab6c47159b1641dcfe8fd3d8d0fa192602267c0beb6da8",
+    "assignment1_mission/assignment1_mission/part03/geo.py": "474667025f49d3e65ca382e7103ecf17797948abbfa593084a1a9451dee2539e",
+    "assignment1_mission/assignment1_mission/part03/outdoor.py": "7f736fdfd5f3a3d406dde87b93496dfc3b55784be9eaac95494a02606f9ee8f4",
+    "assignment1_mission/tools/plot_evidence.py": "54f8c1a1c56961cac4291571971a7a2f4dba014523dd05f09ea4bde6ff4cd8c0",
+    "assignment1_mission/tools/plot_outdoor.py": "07c3c992e9b79e303a12b8a4732b06b755b455345c021e9b85986d1c80d0aa08",
+    "missions/exam_example.csv": "518f84ddcc916b02dbf74bf3dd7a29841465cafe508c17a03c48344d449a772e",
+    "maps/FEI_LRS_PCD/map.pcd": "05d049de4d42ef828870c3451f0805ea56096e1481e49ad6aef9c05af4c151b4",
+    "worlds/fei_lrs_gazebo.world": "7834cedbc90892cca7a78de5c12cbfad1c52e9b99d3568b7bb117d575f59ef76",
+    "worlds/fei_lrs_outdoor.world": "fcd3cfeaf982afa06dbeeb28716c55b54d1e34d42f8035b90319f4d16e6a2777"
+  },
+  "publication_verification": {
+    "date": "2026-10-20",
+    "branch": "part4",
+    "tested_commit": "d9dd12d0b6219d9d0d3dd0ef33336fd14cd29623",
+    "fresh_git_clone": true,
+    "build": {
+      "command": "colcon build --packages-select assignment1_mission",
+      "result": "passed"
+    },
+    "pytest": {
+      "command": "/usr/bin/python3 -m pytest -q assignment1_mission/test",
+      "passed": 57,
+      "duration_s": 0.9
+    },
+    "executables": [
+      "indoor",
+      "outdoor",
+      "plan3d"
+    ],
+    "notebooks": "nbformat validation passed; local links and source hashes match",
+    "source_and_input_sha256": "all existing hashes match the fresh Git clone",
+    "model_resource_paths_checked": 23,
+    "logs": [
+      "verification/git_clone_build.log",
+      "verification/git_clone_pytest.log"
+    ]
+  }
+}

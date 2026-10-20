@@ -1,0 +1,309 @@
+{
+  "planning": [
+    {
+      "leg": 1,
+      "raw_points": 2,
+      "simplified_points": 2,
+      "median_seconds": 0.0003311170000870334,
+      "length_m": 6.612329392884175,
+      "collision_free": true
+    },
+    {
+      "leg": 2,
+      "raw_points": 17,
+      "simplified_points": 3,
+      "median_seconds": 0.011641311999937898,
+      "length_m": 5.420864849624808,
+      "collision_free": true
+    },
+    {
+      "leg": 3,
+      "raw_points": 27,
+      "simplified_points": 4,
+      "median_seconds": 0.0565257539999493,
+      "length_m": 8.426443088395526,
+      "collision_free": true
+    },
+    {
+      "leg": 4,
+      "raw_points": 27,
+      "simplified_points": 3,
+      "median_seconds": 0.0293432789999315,
+      "length_m": 7.542905146921187,
+      "collision_free": true
+    },
+    {
+      "leg": 5,
+      "raw_points": 24,
+      "simplified_points": 3,
+      "median_seconds": 0.005583522000051744,
+      "length_m": 6.550818878065268,
+      "collision_free": true
+    },
+    {
+      "leg": 6,
+      "raw_points": 45,
+      "simplified_points": 3,
+      "median_seconds": 0.03067960199996378,
+      "length_m": 13.735287861760781,
+      "collision_free": true
+    }
+  ],
+  "indoor": {
+    "duration_s": 102.70019173622131,
+    "final_state": "DONE",
+    "final_armed": false,
+    "states": [
+      {
+        "time_s": 0.0,
+        "state": "SET_MODE"
+      },
+      {
+        "time_s": 0.012787580490112305,
+        "state": "ARM"
+      },
+      {
+        "time_s": 0.9989519119262695,
+        "state": "TAKEOFF"
+      },
+      {
+        "time_s": 6.429639577865601,
+        "state": "TURN"
+      },
+      {
+        "time_s": 9.308933734893799,
+        "state": "NAVIGATE"
+      },
+      {
+        "time_s": 12.308885097503662,
+        "state": "TASK"
+      },
+      {
+        "time_s": 12.408961772918701,
+        "state": "NAVIGATE"
+      },
+      {
+        "time_s": 19.108874082565308,
+        "state": "TASK"
+      },
+      {
+        "time_s": 21.612642526626587,
+        "state": "TURN"
+      },
+      {
+        "time_s": 23.132959365844727,
+        "state": "NAVIGATE"
+      },
+      {
+        "time_s": 31.609309911727905,
+        "state": "TASK"
+      },
+      {
+        "time_s": 31.838287830352783,
+        "state": "TURN"
+      },
+      {
+        "time_s": 35.20890784263611,
+        "state": "NAVIGATE"
+      },
+      {
+        "time_s": 41.82930016517639,
+        "state": "TASK"
+      },
+      {
+        "time_s": 42.005210161209106,
+        "state": "LAND"
+      },
+      {
+        "time_s": 57.84366035461426,
+        "state": "SET_MODE"
+      },
+      {
+        "time_s": 57.94535422325134,
+        "state": "ARM"
+      },
+      {
+        "time_s": 58.80886483192444,
+        "state": "TAKEOFF"
+      },
+      {
+        "time_s": 65.05384993553162,
+        "state": "TURN"
+      },
+      {
+        "time_s": 68.60906982421875,
+        "state": "NAVIGATE"
+      },
+      {
+        "time_s": 73.15481162071228,
+        "state": "TASK"
+      },
+      {
+        "time_s": 77.30903792381287,
+        "state": "TURN"
+      },
+      {
+        "time_s": 77.90927863121033,
+        "state": "NAVIGATE"
+      },
+      {
+        "time_s": 88.40890622138977,
+        "state": "TASK"
+      },
+      {
+        "time_s": 88.50896072387695,
+        "state": "LAND"
+      },
+      {
+        "time_s": 102.70019173622131,
+        "state": "DONE"
+      }
+    ],
+    "setpoint_distance_m": {
+      "samples": 582,
+      "median": 0.2819412006407438,
+      "p95": 6.227764488180068,
+      "maximum": 8.49063796587795,
+      "rmse": 2.6536308659279
+    },
+    "navigation_path_distance_m": {
+      "samples": 392,
+      "median": 0.07240026288166165,
+      "p95": 0.36507204963389883,
+      "maximum": 0.611843356552504,
+      "rmse": 0.16710140596843076
+    },
+    "navigation_clearance": {
+      "samples": 392,
+      "inside_inflated_voxels": 5,
+      "inside_occupied_voxels": 0
+    },
+    "waypoint_arrivals": [
+      {
+        "task": "-",
+        "precision": "soft",
+        "error_m": 0.19060000044331968
+      },
+      {
+        "task": "yaw180",
+        "precision": "hard",
+        "error_m": 0.06807005674419118
+      },
+      {
+        "task": "-",
+        "precision": "hard",
+        "error_m": 0.11705401081459954
+      },
+      {
+        "task": "landtakeoff",
+        "precision": "hard",
+        "error_m": 0.06195549510860644
+      },
+      {
+        "task": "yaw90",
+        "precision": "soft",
+        "error_m": 0.0724396617437727
+      },
+      {
+        "task": "land",
+        "precision": "hard",
+        "error_m": 0.06689963954467637
+      }
+    ]
+  },
+  "outdoor": {
+    "duration_s": 176.5610613822937,
+    "final_state": "DONE",
+    "final_armed": false,
+    "states": [
+      {
+        "time_s": 0.0,
+        "state": "SET_MODE"
+      },
+      {
+        "time_s": 0.19958138465881348,
+        "state": "ARM"
+      },
+      {
+        "time_s": 1.10239839553833,
+        "state": "TAKEOFF"
+      },
+      {
+        "time_s": 8.899531364440918,
+        "state": "SQUARE_ALIGN"
+      },
+      {
+        "time_s": 12.09956955909729,
+        "state": "OUT_SQUARE"
+      },
+      {
+        "time_s": 93.80563998222351,
+        "state": "OUT_CENTER"
+      },
+      {
+        "time_s": 98.79989624023438,
+        "state": "EIGHT_ALIGN"
+      },
+      {
+        "time_s": 101.45210695266724,
+        "state": "EIGHT"
+      },
+      {
+        "time_s": 153.79940724372864,
+        "state": "OUT_RETURN"
+      },
+      {
+        "time_s": 155.89960741996765,
+        "state": "LAND"
+      },
+      {
+        "time_s": 176.5610613822937,
+        "state": "DONE"
+      }
+    ],
+    "setpoint_distance_m": {
+      "samples": 480,
+      "median": 0.33931214155628103,
+      "p95": 0.5263314688296511,
+      "maximum": 3.4668348260522244,
+      "rmse": 0.5226756830630916
+    },
+    "square_yaw_error_deg": {
+      "samples": 270,
+      "median": 0.5715301020500941,
+      "p95": 1.4188550758270555,
+      "maximum": 2.5691223745842002,
+      "rmse": 0.7831625113023837
+    },
+    "square_tracking_m": {
+      "samples": 270,
+      "median": 0.33555966235525014,
+      "p95": 0.36716234996863234,
+      "maximum": 0.46181133980306127,
+      "rmse": 0.3292957878044872
+    },
+    "figure_eight_yaw_error_deg": {
+      "samples": 176,
+      "median": 1.2853921471114589,
+      "p95": 4.628796265742556,
+      "maximum": 13.085158185758122,
+      "rmse": 2.463054989765752
+    },
+    "figure_eight_tracking_m": {
+      "samples": 176,
+      "median": 0.38504522708834465,
+      "p95": 0.5475000896649276,
+      "maximum": 0.5885073927604006,
+      "rmse": 0.4031312546485541
+    },
+    "maximum_radius_from_poi_m": 3.510641042650515,
+    "figure_eight_duration_s": 52.3473002910614,
+    "square_corner_order": [
+      1,
+      2,
+      3,
+      4,
+      1
+    ]
+  }
+}
