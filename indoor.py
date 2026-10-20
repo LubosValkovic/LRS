@@ -4,7 +4,6 @@
 """Indoor mission: CSV goals, planned routes and waypoint tasks."""
 
 import math
-import time
 
 import rclpy
 
@@ -16,22 +15,21 @@ from ..part01.planning import VoxelMap, plan_route
 class IndoorMission(FlightNode):
     def __init__(self):
         super().__init__('assignment1_indoor')
-        self.declare_parameter('mission_file', '')
-        self.declare_parameter('map_file', '')
-        self.declare_parameter('resolution', 0.25)
-        self.declare_parameter('safety_radius', 0.45)
-        self.declare_parameter('map_launch', [13.0, 7.0, 0.0])
-        self.declare_parameter('map_to_local_yaw_deg', 90.0)
-        mission_file = self.get_parameter('mission_file').value
-        map_file = self.get_parameter('map_file').value
+        mission_file = self._parameter('mission_file', '')
+        map_file = self._parameter('map_file', '')
+        resolution = self._parameter('resolution', 0.25)
+        radius = self._parameter('safety_radius', 0.45)
+        map_launch = self._parameter('map_launch', [13.0, 7.0, 0.0])
+        frame_yaw = self._parameter('map_to_local_yaw_deg', 90.0)
         if not mission_file or not map_file:
             raise ValueError('mission_file and map_file ROS parameters are required')
-        self.map_launch = tuple(float(x) for x in self.get_parameter('map_launch').value)
-        self.frame_yaw = math.radians(float(self.get_parameter('map_to_local_yaw_deg').value))
+        self.map_launch = tuple(float(x) for x in map_launch)
+        self.frame_yaw = math.radians(float(frame_yaw))
+        if len(self.map_launch) != 3 or not all(math.isfinite(v) for v in (*self.map_launch, self.frame_yaw)):
+            raise ValueError('map_launch needs three finite coordinates and the map rotation must be finite')
         self.frame_translation = (0.0, 0.0, 0.0)
         self.mission = load_mission(mission_file)
-        grid = VoxelMap(map_file, self.get_parameter('resolution').value,
-                        self.get_parameter('safety_radius').value)
+        grid = VoxelMap(map_file, resolution, radius)
         self.get_logger().info(f'map bounds {grid.minimum.tolist()} .. {grid.maximum.tolist()}, '
                                f'{int(grid.occupied.sum())} occupied voxels, '
                                f'{int(grid.blocked.sum())} inflated voxels')
@@ -72,7 +70,7 @@ class IndoorMission(FlightNode):
             self._fail('first takeoff altitude is too low')
 
     def after_takeoff(self):
-        if self.pre_route is None:
+        if self.pre_route is None or self.segment != 0:
             self._begin_segment(turn=True)
         else:
             self.pre_index = 1
@@ -80,7 +78,10 @@ class IndoorMission(FlightNode):
             self._enter('PRE_NAV')
 
     def _aim_pre(self):
-        a, b = self.pre_route[self.pre_index - 1:self.pre_index + 1]
+        self._aim(self.pre_route, self.pre_index)
+
+    def _aim(self, route, index):
+        a, b = route[index - 1:index + 1]
         self.desired = self.local(b)
         if math.hypot(b[0] - a[0], b[1] - a[1]) > 1e-4:
             self.desired_yaw = math.atan2(b[1] - a[1], b[0] - a[0]) + self.frame_yaw
@@ -99,12 +100,7 @@ class IndoorMission(FlightNode):
             self._enter('NAVIGATE')
 
     def _aim_at_route_point(self):
-        route = self.routes[self.segment]
-        a = route[self.point_index - 1]
-        b = route[self.point_index]
-        self.desired = self.local(b)
-        if math.hypot(b[0] - a[0], b[1] - a[1]) > 1e-4:
-            self.desired_yaw = math.atan2(b[1] - a[1], b[0] - a[0]) + self.frame_yaw
+        self._aim(self.routes[self.segment], self.point_index)
 
     def _advance(self, turn=False):
         self.segment += 1

@@ -34,8 +34,10 @@ def load_mission(path):
                 x, y, z = values
                 precision = row['precision'].strip().lower()
                 task = row['task'].strip().lower()
-            except (ValueError, TypeError, KeyError) as error:
+            except (ValueError, TypeError, KeyError, AttributeError) as error:
                 raise ValueError(f'bad mission row {row}: {error}') from error
+            if None in row:
+                raise ValueError(f'too many columns in mission row {row}')
             if not all(math.isfinite(v) for v in (x, y, z)) or z <= 0:
                 raise ValueError(f'bad coordinates {row}')
             if precision not in ('hard', 'soft'):
@@ -44,7 +46,9 @@ def load_mission(path):
                 if not task.startswith('yaw'):
                     raise ValueError(f'bad task {task}')
                 try:
-                    float(task[3:])
+                    angle = float(task[3:])
+                    if not math.isfinite(angle):
+                        raise ValueError('yaw must be finite')
                 except ValueError as error:
                     raise ValueError(f'bad yaw task {task}') from error
             mission.append(Waypoint(x, y, z, precision, task))
@@ -66,4 +70,3 @@ def unwrap_near(angle, reference):
 def yaw_from_quaternion(q):
     return math.atan2(2 * (q.w * q.z + q.x * q.y),
                       1 - 2 * (q.y * q.y + q.z * q.z))
-
