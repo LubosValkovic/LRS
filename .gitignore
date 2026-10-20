@@ -1,8 +1,0 @@
-build/
-log/
-install/
-*.parm
-*.tlog*
-*.mp4
-__pycache__/
-.pytest_cache/
