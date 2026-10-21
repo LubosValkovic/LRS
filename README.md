@@ -5,7 +5,10 @@ aj vonkajšej misie cez MAVROS a ArduPilot.
 
 - **`part1`, `part2`, `part3`**: samostatné pôvodné moduly.
 - **`assignment1`**: ich zlúčená história a kód v priečinkoch `part01` až `part03`.
-- **`devel`**: spustiteľný celok vrátane ROS balenia, testov, skriptov a CSV.
+- **`devel`**: podporné ROS balenie, testy, skripty a CSV.
+- **`main`**: spustiteľný celok vzniknutý zlúčením `assignment1` a `devel`.
+
+Na zostavenie a spustenie používaj vetvu **`main`**.
 
 ```text
 src/assignment1_mission/
@@ -31,7 +34,7 @@ funkčnú školskú inštaláciu Gazebo, pluginu `ardupilot_gazebo`, ArduPilot S
 a MAVProxy. Tieto komponenty sa týmto repozitárom neinštalujú.
 
 ```bash
-git clone --branch devel https://github.com/LubosValkovic/LRS.git LRS-devel
+git clone --branch main https://github.com/LubosValkovic/LRS.git LRS-devel
 cd LRS-devel
 
 # Absolútna cesta k existujúcemu školskému workspace s dátami:
