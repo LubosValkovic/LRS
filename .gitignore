@@ -1,0 +1,26 @@
+# ROS / Python build output
+/build/
+/install/
+/log/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+.venv*/
+
+# External school assets (directories or local symlinks)
+/maps
+/models
+/worlds
+
+# Local recordings and generated analysis output
+/evidence/
+/recordings/
+/plots/
+*.mcap
+*.db3
+*.db3-*
+*.tlog*
+*.parm
+*.mp4
+.ipynb_checkpoints/
+kernel-ipc-*
