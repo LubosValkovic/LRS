@@ -1,4 +1,56 @@
-# Assignment 1 — ROS 2 misie dronu
+# LRS — Assignment 1 a Assignment 2
+
+Vo vetve **`zadanie2-lrs`** pokračujeme témou **vyhľadávanie a sledovanie roverov**.
+Základom je náš hotový Assignment 1 v `src/assignment1_mission`; letové riadenie
+budeme ďalej používať zo spoločného balíka.
+
+## Čo preberáme do misie s rovermi
+
+| Hotová časť | Zdroj | Využitie pre Assignment 2 |
+|---|---|---|
+| `FlightNode` | [`part02/control.py`](src/assignment1_mission/assignment1_mission/part02/control.py) | MAVROS telemetria a služby, GUIDED, arming, vzlet, setpointy, abort a reakcie na stratu údajov. |
+| `spin` a callback skupiny | ten istý `control.py` | Spracovanie obrazu môže bežať oddelene od riadenia a publikovania setpointov. |
+| Uhlové a quaternionové funkcie | [`part02/mission.py`](src/assignment1_mission/assignment1_mission/part02/mission.py) | Napríklad `wrap`, `unwrap_near` a `yaw_from_quaternion` pri orientácii dronu a prevode detekcie. |
+| Spúšťanie simulácie | [`scripts/`](scripts/) | Existujúce skripty pre Gazebo, ArduPilot SITL a MAVROS. |
+| ROS balenie a testy | [`src/assignment1_mission/`](src/assignment1_mission/) | Zachovaný funkčný základ, existujúce testy a príkazy `plan3d`, `indoor`, `outdoor`. |
+
+Nový roverový uzol bude dediť z `FlightNode` a pridá vlastné spracovanie obrazu
+a rozhodovanie v `mission_tick()`. Vzlet, MAVROS služby, časovače a abort tak
+použije zo spoločnej implementácie. Roverová misia podľa zadania pri bežnom
+sledovaní nepristáva.
+
+**Stav prípravy:** táto vetva obsahuje hotový kód Assignmentu 1, zadanie,
+prezentáciu a dodaný školský randomizér pohybu roverov. Nový roverový riadiaci
+uzol a spracovanie kamier ešte treba doplniť.
+
+Pre dva drony treba prispôsobiť prepojenie existujúceho `FlightNode` na dve
+oddelené inštancie MAVROS. Aktuálne používa absolútne názvy `/mavros/...`, takže
+samotné nastavenie ROS namespace nestačí. Každý dron musí mať vlastné topicy,
+služby a abort; túto úpravu treba vykonať pred súbežným spustením riadenia.
+
+Nové časti Assignmentu 2 sú pripojenie dvoch kamier, detekcia vlastného ArUco ID,
+prevod detekcie do ENU, vyhľadávanie, sledovanie a návrat k vyhľadávaniu pri
+strate značky. Podrobnosti sú v [zadaní roverovej misie](assignments/assignment2/rover-find-and-follow.md).
+
+### Dodaný pohyb roverov
+
+Použi školský svet `fei_lrs_precision_landing.world` a jeho zodpovedajúce modely,
+pripojené cez `worlds` a `models` podľa návodu nižšie. Dodaný skript bol prevzatý
+zo školskej vetvy `feat/presentation-assignment-2`, verzia `99602ce`:
+
+```bash
+scripts/run_gazebo.sh fei_lrs_precision_landing.world
+# V ďalšom termináli, keď svet beží:
+scripts/randomize_rovers.py --seed 42
+```
+
+Randomizér komunikuje priamo s Gazebo cez jeho Python bindings. Odoberá
+`/model/aruco_rover_1/odometry` a `/model/aruco_rover_2/odometry` a posiela
+rýchlostné príkazy na príslušné `cmd_vel`. Je to školský nástroj na pohyb roverov;
+budúci vizuálny riadiaci uzol bude ich polohu získavať z kamier. Dostupné
+parametre zobrazí `scripts/randomize_rovers.py --help`.
+
+## Existujúci Assignment 1 — zostavenie a spustenie
 
 Kompletný balík `assignment1_mission` na plánovanie trasy a vykonanie vnútornej
 aj vonkajšej misie cez MAVROS a ArduPilot.
@@ -8,7 +60,7 @@ aj vonkajšej misie cez MAVROS a ArduPilot.
 - **`devel`**: podporné ROS balenie, testy, skripty a CSV.
 - **`main`**: spustiteľný celok vzniknutý zlúčením `assignment1` a `devel`.
 
-Na zostavenie a spustenie používaj vetvu **`main`**.
+Nižšie uvedené príkazy na zostavenie a spustenie fungujú priamo vo vetve **`zadanie2-lrs`**.
 
 ```text
 src/assignment1_mission/
@@ -241,7 +293,7 @@ Analýza oboch záznamov:
 
 `plot_evidence.py` predpokladá indoor misiu `exam_example.csv`, mapu a pôvodné
 predvolené parametre; použi zodpovedajúce záznamy. Výstupy a záznamy zostávajú
-mimo verzie zdrojových kódov. Dokumentáciu tejto vetvy tvorí iba tento README.
+mimo verzie zdrojových kódov. Návod na zostavenie je v tomto README; pôvodné zadania sú v `assignments/assignment2`.
 
 
 ## Assignment 2 — podklady
