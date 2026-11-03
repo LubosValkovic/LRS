@@ -21,8 +21,8 @@ from .geo import enu_to_geodetic, geodetic_to_enu
 
 
 class OutdoorMission(FlightNode):
-    def __init__(self):
-        super().__init__('assignment1_outdoor')
+    def __init__(self, **node_kwargs):
+        super().__init__('assignment1_outdoor', **node_kwargs)
         self.poi_offset = (float(self._parameter('poi_east', 0.0)),
                            float(self._parameter('poi_north', 0.0)))
         self.omega = float(self._parameter('omega', 0.12))
@@ -67,12 +67,12 @@ class OutdoorMission(FlightNode):
         self.target_poses = deque(maxlen=self.path_max_points)
         self.actual_pub = self.create_publisher(Path, '~/actual_path', 10)
         self.target_pub = self.create_publisher(Path, '~/target_path', 10)
-        self._subscribe_sensor(NavSatFix, '/mavros/global_position/global', 'fix', 'fix_at')
-        self._subscribe_sensor(UInt32, '/mavros/global_position/raw/satellites', 'satellites', 'satellites_at', 'data')
-        self.create_subscription(HomePosition, '/mavros/home_position/home', self._home_cb,
+        self._subscribe_sensor(NavSatFix, 'mavros/global_position/global', 'fix', 'fix_at')
+        self._subscribe_sensor(UInt32, 'mavros/global_position/raw/satellites', 'satellites', 'satellites_at', 'data')
+        self.create_subscription(HomePosition, 'mavros/home_position/home', self._home_cb,
                                  qos_profile_sensor_data, callback_group=self.sensor_group)
-        self._subscribe_sensor(Float64, '/mavros/global_position/compass_hdg', 'compass', 'compass_at', 'data')
-        self._subscribe_sensor(Float64, '/mavros/global_position/rel_alt', 'rel_alt', 'rel_alt_at', 'data')
+        self._subscribe_sensor(Float64, 'mavros/global_position/compass_hdg', 'compass', 'compass_at', 'data')
+        self._subscribe_sensor(Float64, 'mavros/global_position/rel_alt', 'rel_alt', 'rel_alt_at', 'data')
 
     def _home_cb(self, msg):
         with self.lock:

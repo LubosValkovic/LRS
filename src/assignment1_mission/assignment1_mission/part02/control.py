@@ -22,10 +22,14 @@ from .mission import unwrap_near, yaw_from_quaternion
 
 
 class FlightNode(Node):
-    """Common service handshake, setpoint timer and safety state handling."""
+    """Common service handshake, setpoint timer and safety state handling.
 
-    def __init__(self, name):
-        super().__init__(name)
+    Relative MAVROS names follow the node namespace. The root namespace keeps
+    the original /mavros interface; /drone_1 uses /drone_1/mavros instead.
+    """
+
+    def __init__(self, name, **node_kwargs):
+        super().__init__(name, **node_kwargs)
         self.lock = threading.RLock()
         self.sensor_group = MutuallyExclusiveCallbackGroup()
         self.logic_group = MutuallyExclusiveCallbackGroup()
@@ -46,16 +50,16 @@ class FlightNode(Node):
         self.takeoff_height = 0.0
         self.launch_local = None
 
-        self.setpoint_pub = self.create_publisher(PositionTarget, '/mavros/setpoint_raw/local', 10)
-        self._subscribe_sensor(State, '/mavros/state', 'vehicle', 'last_state', qos=10)
-        self.create_subscription(PoseStamped, '/mavros/local_position/pose', self._pose_cb,
+        self.setpoint_pub = self.create_publisher(PositionTarget, 'mavros/setpoint_raw/local', 10)
+        self._subscribe_sensor(State, 'mavros/state', 'vehicle', 'last_state', qos=10)
+        self.create_subscription(PoseStamped, 'mavros/local_position/pose', self._pose_cb,
                                  qos_profile_sensor_data, callback_group=self.sensor_group)
-        self._subscribe_sensor(TwistStamped, '/mavros/local_position/velocity_local',
+        self._subscribe_sensor(TwistStamped, 'mavros/local_position/velocity_local',
                                'velocity', 'last_velocity', 'twist.linear')
-        self.mode_client = self.create_client(SetMode, '/mavros/set_mode', callback_group=self.service_group)
-        self.arm_client = self.create_client(CommandBool, '/mavros/cmd/arming',
+        self.mode_client = self.create_client(SetMode, 'mavros/set_mode', callback_group=self.service_group)
+        self.arm_client = self.create_client(CommandBool, 'mavros/cmd/arming',
                                              callback_group=self.service_group)
-        self.takeoff_client = self.create_client(CommandTOL, '/mavros/cmd/takeoff',
+        self.takeoff_client = self.create_client(CommandTOL, 'mavros/cmd/takeoff',
                                                  callback_group=self.service_group)
         self.create_service(Trigger, '~/abort', self._abort_cb, callback_group=self.service_group)
         self.create_timer(0.1, self._tick_locked, callback_group=self.logic_group)

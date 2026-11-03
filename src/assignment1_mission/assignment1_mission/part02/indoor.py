@@ -13,8 +13,8 @@ from ..part01.planning import VoxelMap, plan_route
 
 
 class IndoorMission(FlightNode):
-    def __init__(self):
-        super().__init__('assignment1_indoor')
+    def __init__(self, **node_kwargs):
+        super().__init__('assignment1_indoor', **node_kwargs)
         mission_file = self._parameter('mission_file', '')
         map_file = self._parameter('map_file', '')
         resolution = self._parameter('resolution', 0.25)

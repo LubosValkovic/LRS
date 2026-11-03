@@ -23,10 +23,36 @@ sledovaní nepristáva.
 prezentáciu a dodaný školský randomizér pohybu roverov. Nový roverový riadiaci
 uzol a spracovanie kamier ešte treba doplniť.
 
-Pre dva drony treba prispôsobiť prepojenie existujúceho `FlightNode` na dve
-oddelené inštancie MAVROS. Aktuálne používa absolútne názvy `/mavros/...`, takže
-samotné nastavenie ROS namespace nestačí. Každý dron musí mať vlastné topicy,
-služby a abort; túto úpravu treba vykonať pred súbežným spustením riadenia.
+### Krok 1 — oddelenie komunikácie dronov: hotovo
+
+`FlightNode` používa relatívne názvy `mavros/...`. Každá inštancia preto smeruje
+telemetriu, setpointy a MAVROS služby do svojho ROS namespace. Abort zostáva
+súkromnou službou uzla `~/abort`. Rovnakú úpravu majú aj ďalšie senzorové
+odbery outdoor misie.
+
+| Namespace uzla | Telemetria | Setpointy | Abort uzla `assignment1_indoor` |
+|---|---|---|---|
+| `/` (predvolené) | `/mavros/state` | `/mavros/setpoint_raw/local` | `/assignment1_indoor/abort` |
+| `/drone_1` | `/drone_1/mavros/state` | `/drone_1/mavros/setpoint_raw/local` | `/drone_1/assignment1_indoor/abort` |
+| `/drone_2` | `/drone_2/mavros/state` | `/drone_2/mavros/setpoint_raw/local` | `/drone_2/assignment1_indoor/abort` |
+
+Namespace možno zadať cez `--ros-args -r __ns:=/drone_1` alebo pri vytváraní
+uzla cez `namespace='/drone_1'`. MAVROS príslušného dronu má používať rovnaký
+namespace. Pôvodné príkazy indoor a outdoor bez namespace zachovávajú rozhrania
+Assignmentu 1.
+
+Zostavenie balíka a **63 testov** prešlo: 57 pôvodných a 6 nových kontrol
+názvov, smerovania telemetrie, setpointov a izolácie abort/RTL. Nové kontroly
+používajú skutočné ROS správy a služby v oddelenej doméne bez autopilota a letu.
+Po zostavení ich možno spustiť aj samostatne, bez mapy:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+/usr/bin/python3 -m pytest -q src/assignment1_mission/test/part02/test_namespaces.py
+```
+
+Spustenie dvoch SITL, dvoch MAVROS a kamier patrí do kroku 2 podľa [plánu](PLAN.md).
 
 Nové časti Assignmentu 2 sú pripojenie dvoch kamier, detekcia vlastného ArUco ID,
 prevod detekcie do ENU, vyhľadávanie, sledovanie a návrat k vyhľadávaniu pri
@@ -68,7 +94,7 @@ src/assignment1_mission/
 │   ├── part01/       # voxelová mapa, A*, príkaz plan3d
 │   ├── part02/       # CSV, spoločný FlightNode, indoor misia
 │   └── part03/       # GPS ↔ lokálne ENU, outdoor misia
-├── test/            # existujúcich 57 testov
+├── test/            # 57 pôvodných + 6 kontrol namespaces
 ├── tools/           # spracovanie externých rosbagov
 ├── resource/
 ├── package.xml
