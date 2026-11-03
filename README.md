@@ -34,7 +34,7 @@ funkčnú školskú inštaláciu Gazebo, pluginu `ardupilot_gazebo`, ArduPilot S
 a MAVProxy. Tieto komponenty sa týmto repozitárom neinštalujú.
 
 ```bash
-git clone --branch main https://github.com/LubosValkovic/LRS.git LRS-devel
+git clone --branch zadanie2-lrs https://github.com/LubosValkovic/LRS.git LRS-devel
 cd LRS-devel
 
 # Absolútna cesta k existujúcemu školskému workspace s dátami:
@@ -242,3 +242,20 @@ Analýza oboch záznamov:
 `plot_evidence.py` predpokladá indoor misiu `exam_example.csv`, mapu a pôvodné
 predvolené parametre; použi zodpovedajúce záznamy. Výstupy a záznamy zostávajú
 mimo verzie zdrojových kódov. Dokumentáciu tejto vetvy tvorí iba tento README.
+
+
+## Assignment 2 — podklady
+
+Vetva `zadanie2-lrs` vychádza z `main` a pridáva podklady zo školskej vetvy
+[`feat/presentation-assignment-2`](https://github.com/KocurMaros/LRS-URK/tree/feat/presentation-assignment-2)
+(verzia `99602ce`).
+
+- [Zadanie a výber jednej z troch tém](assignments/assignment2/README.md).
+- [Obstacle avoidance](assignments/assignment2/obstacle-avoidance.md).
+- [Lokalizácia pomocou Kalmanovho filtra](assignments/assignment2/localization.md).
+- [Vyhľadávanie a sledovanie roverov](assignments/assignment2/rover-find-and-follow.md).
+- [Prezentácia Assignment 2](presentation/LRS_Assignment_2.pptx).
+
+Odkazy na pomocné balíky, návody a pravidlá mimo týchto podkladov smerujú
+na príslušnú verziu školského repozitára. Simulačné dáta možno naďalej pripájať
+zo školského workspace podľa návodu vyššie.
