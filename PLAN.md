@@ -35,7 +35,7 @@ prešlo; uspelo všetkých **63 testov** (57 pôvodných + 6 nových, nič nevyn
 Nové testy overili aj skutočné doručovanie správ a volanie abort/RTL medzi
 dvoma oddelenými inštanciami v testovacej ROS doméne bez autopilota.
 
-## 2. Simulácia dvoch dronov a pripojenie kamier
+## 2. Simulácia dvoch dronov a pripojenie kamier — hotovo
 
 - Pripojiť externé školské modely a svet `fei_lrs_precision_landing.world`.
 - Pripraviť opakovateľné spustenie dvoch SITL a dvoch MAVROS s príslušnými
@@ -45,6 +45,21 @@ dvoma oddelenými inštanciami v testovacej ROS doméne bez autopilota.
 
 **Overenie:** obe MAVROS spojenia a obe kamery majú súčasne živé správy;
 uložiť zistené názvy, typy a frekvencie. Samotná existencia topicu nestačí.
+
+**Výsledok (18. 11. 2026):** najprv opätovne prešlo všetkých 63 testov kroku 1.
+Nový balík `assignment2_rover` spúšťa SITL s oddelenými stavovými priečinkami,
+SYSID 1/2, FDM portmi 9002/9012 a MAVLink portmi 14550/14560. Launch spúšťa
+dva MAVROS a štyri jednosmerné mosty pre obraz a `camera_info`. Telemetriu
+zapína službou `MessageInterval`, vrátane opätovného nastavenia po strate
+spojenia. Školský randomizér zostal zachovaný.
+
+Zostavenie oboch balíkov a **73 testov** prešlo (63 predchádzajúcich + 10
+nových). Živá kontrola s oboma dronmi a pohybujúcimi sa rovermi pri seede 42
+overila všetkých desať vstupných tokov súčasne počas 20 s: heartbeat 5 Hz,
+poloha a rýchlosť 10 Hz, obrazy 27,00/29,65 Hz a obe `camera_info` 30,30 Hz
+reálneho času. Oba target SYSID boli správne a drony zostali nearmované.
+Lokálny report je `log/step2_final_pedcbjy9/bringup.json`; postup a názvy
+rozhraní sú v README. Reporty a externé dáta Git ignoruje.
 
 ## 3. Detekcia vlastnej značky na jednom drone
 
@@ -62,6 +77,8 @@ spracovanie neblokuje letové časovače. Najprv bez sledovania pohyblivého cie
 - Odvodiť skutočnú veľkosť detegovaného štvorca z modelu a jeho textúry.
 - Zahrnúť posun a orientáciu kamery aj úplný quaternion dronu.
 - Ošetriť časový odstup medzi obrazom a použitou polohou dronu.
+- Zjednotiť časové bázy: aktuálne obrazy používajú čas Gazebo a MAVROS
+  predvolene čas počítača; ich časové značky sa zatiaľ nesmú priamo porovnávať.
 
 **Overenie:** numerické testy prevodov a kontrola pri visení nad roverom.
 Zdokumentovať odhadovanú vzdialenosť a jej chybu. Ground truth môže slúžiť
@@ -90,4 +107,4 @@ beh. Splnené body zadania označiť podľa toho, čo bolo naozaj demonštrovan�
 
 ## Aktuálny stav
 
-Hotové sú kroky 0 a 1. Kroky 2–6 ešte nezačali.
+Hotové sú kroky 0, 1 a 2. Kroky 3–6 ešte nezačali.

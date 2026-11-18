@@ -1,0 +1,4 @@
+# Load the interfaces needed by FlightNode and camera-based rover tracking.
+/**:
+  ros__parameters:
+    plugin_allowlist: [sys_status, sys_time, command, imu, local_position, setpoint_raw]

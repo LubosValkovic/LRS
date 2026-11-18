@@ -20,8 +20,9 @@ použije zo spoločnej implementácie. Roverová misia podľa zadania pri bežno
 sledovaní nepristáva.
 
 **Stav prípravy:** táto vetva obsahuje hotový kód Assignmentu 1, zadanie,
-prezentáciu a dodaný školský randomizér pohybu roverov. Nový roverový riadiaci
-uzol a spracovanie kamier ešte treba doplniť.
+prezentáciu, školský randomizér a balík `assignment2_rover` pre spustenie dvoch
+dronov a pripojenie kamier. Detekcia značiek a roverový riadiaci uzol patria do
+nasledujúcich krokov.
 
 ### Krok 1 — oddelenie komunikácie dronov: hotovo
 
@@ -52,7 +53,128 @@ source install/setup.bash
 /usr/bin/python3 -m pytest -q src/assignment1_mission/test/part02/test_namespaces.py
 ```
 
-Spustenie dvoch SITL, dvoch MAVROS a kamier patrí do kroku 2 podľa [plánu](PLAN.md).
+### Krok 2 — spustenie dvoch dronov a kamier: hotovo
+
+Po pripojení externých dát a zostavení **oboch balíkov** podľa návodu nižšie
+spúšťaj nasledujúce terminály z koreňa `LRS-URK2`. V termináloch 2–4 a pri
+kontrole vždy najprv načítaj prostredie:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+```
+
+**Terminál 1 — spoločný svet Gazebo:**
+
+```bash
+source /opt/ros/jazzy/setup.bash
+scripts/run_gazebo.sh fei_lrs_precision_landing.world
+# Bez grafického okna, so zachovaným renderovaním kamier:
+# scripts/run_gazebo.sh fei_lrs_precision_landing.world -s --headless-rendering
+```
+
+**Terminál 2 — prvý SITL:**
+
+```bash
+ros2 run assignment2_rover sitl --vehicle 1
+```
+
+**Terminál 3 — druhý SITL:**
+
+```bash
+ros2 run assignment2_rover sitl --vehicle 2
+```
+
+Tieto príkazy používajú už zostavený `~/ardupilot/build/sitl/bin/arducopter`.
+Ak chýba, zostav ho raz pred spustením oboch inštancií:
+
+```bash
+cd ~/ardupilot
+./waf configure --board sitl
+./waf copter
+```
+
+Inú inštaláciu vyber cez `--ardupilot-dir /cesta/ardupilot` alebo premennú
+`ARDUPILOT_DIR`. SITL beží priamo bez MAVProxy; každá inštancia má vlastné
+parametre a logy v `log/sitl/drone_N`. Iný rodičovský priečinok zadaj cez
+`--run-dir /cesta/k/stavom`. Súčasne spúšťaj iba jednu inštanciu každého SYSID.
+
+| Dron / namespace | SYSID | SITL instance | FDM UDP | MAVLink UDP | Home (lat, lon, alt, yaw) |
+|---|---:|---:|---:|---:|---|
+| `/drone_1` | 1 | 0 | 9002 | 14550 | `48.15135451,17.07361560,150,0` |
+| `/drone_2` | 2 | 1 | 9012 | 14560 | `48.15135451,17.07388440,150,0` |
+
+**Terminál 4 — oba MAVROS, telemetria a mosty kamier:**
+
+```bash
+ros2 launch assignment2_rover bringup.launch.py
+```
+
+Launch načíta MAVROS pluginy `sys_status`, `sys_time`, `command`, `imu`,
+`local_position` a `setpoint_raw`. Poskytujú rozhrania potrebné pre `FlightNode`.
+Uzol `telemetry_setup` v každom namespace postupne požiada cez
+`mavros/set_message_interval` o `HEARTBEAT` pri 5 Hz a `ATTITUDE` a
+`LOCAL_POSITION_NED` pri 10 Hz simulačného času. Častejší heartbeat pomáha aj
+pri spomalení simulácie dodržať časový limit spojenia MAVROS v reálnom čase.
+Po obnovení spojenia požiadavky zopakuje; odmietnutú požiadavku alebo timeout
+skúsi znova. Nepotrebuje názvy streamových parametrov konkrétnej verzie
+ArduPilota. [Služba MAVROS](https://github.com/mavlink/mavros/blob/2.15.1/mavros/src/plugins/sys_status.cpp)
+používa príkaz `MAV_CMD_SET_MESSAGE_INTERVAL`.
+
+Kamery sa prenášajú iba smerom Gazebo → ROS s QoS `SENSOR_DATA`. Názvy nižšie
+sú overované pre oba drony; `N` nahraď číslom 1 alebo 2:
+
+| ROS topic | ROS typ | Zdroj v Gazebo |
+|---|---|---|
+| `/drone_N/mavros/state` | `mavros_msgs/msg/State` | ArduPilot cez MAVLink |
+| `/drone_N/mavros/local_position/pose` | `geometry_msgs/msg/PoseStamped` | ArduPilot cez MAVLink |
+| `/drone_N/mavros/local_position/velocity_local` | `geometry_msgs/msg/TwistStamped` | ArduPilot cez MAVLink |
+| `/drone_N/down_camera/image_raw` | `sensor_msgs/msg/Image` | Rovnaký názov, `gz.msgs.Image` |
+| `/drone_N/down_camera/camera_info` | `sensor_msgs/msg/CameraInfo` | Rovnaký názov, `gz.msgs.CameraInfo` |
+
+**Terminál 5 — pohyb roverov a kontrola vstupov:**
+
+Randomizér spusti podľa nasledujúcej sekcie. V ďalšom termináli s načítaným
+ROS prostredím over živé správy:
+
+```bash
+ros2 run assignment2_rover check_bringup \
+  --duration 15 --timeout 90 --output log/rover_bringup.json
+```
+
+Kontrola čaká na oba správne `target_system_id`, pripojené FCU, platnú polohu,
+rýchlosť, obraz a kalibráciu. Potom meria všetkých desať tokov počas celého
+intervalu. Vyžaduje viacero správ, postupujúce časové značky a čerstvé dáta;
+overí aj zhodu rozmerov a rámcov obrazu s `camera_info`. Vypíše frekvencie
+podľa času počítača aj zdrojových značiek, uloží JSON a vráti `PASS` / kód 0
+alebo `FAIL` / kód 1. Existencia topicu sama nestačí.
+
+Táto zostava pripravuje vstupy misie. Spustenie týchto príkazov drony nearmuje
+ani nespúšťa letové riadenie.
+
+**Overené 18. 11. 2026:** zostavenie oboch balíkov a 73 testov prešlo. Živý
+beh v Gazebo Harmonic s dvoma SITL a pohybom roverov pri `--seed 42` skončil
+`PASS` pre všetkých desať tokov počas 20 s. Drony boli pripojené, nearmované,
+v režime `STABILIZE`; overené target SYSID boli 1 a 2.
+
+| Vstup | Dron 1 (Hz v reálnom čase) | Dron 2 (Hz v reálnom čase) |
+|---|---:|---:|
+| Stav / heartbeat | 5,00 | 5,00 |
+| Lokálna poloha | 10,00 | 10,00 |
+| Lokálna rýchlosť | 10,00 | 10,00 |
+| Obraz RGB 640 × 480 | 27,00 | 29,65 |
+| `camera_info` | 30,30 | 30,30 |
+
+Obe kamery majú `fx = fy ≈ 554,38 px`, `cx = 320`, `cy = 240` a nulové
+koeficienty skreslenia. Skutočné rámce kamier sú
+`drone_N/drone_N/down_cam_link/down_camera`; lokálna poloha má hlavičku `map`
+a rýchlosť `base_link`, rozlíšené ROS namespace príslušného dronu.
+Lokálny report s počtami správ, frekvenciami a kalibráciou je
+[`log/step2_final_pedcbjy9/bringup.json`](log/step2_final_pedcbjy9/bringup.json),
+výsledky testov sú vedľa v `pytest.xml`. Priečinok `log` sa neukladá do Gitu.
+Frekvencie závisia od výkonu počítača; počas spomalenia simulácie boli nižšie.
+Obrazy zatiaľ používajú čas Gazebo, MAVROS čas počítača; ich zjednotenie pred
+časovým priraďovaním detekcií k polohe patrí do kroku 4.
 
 Nové časti Assignmentu 2 sú pripojenie dvoch kamier, detekcia vlastného ArUco ID,
 prevod detekcie do ENU, vyhľadávanie, sledovanie a návrat k vyhľadávaniu pri
@@ -112,8 +234,8 @@ funkčnú školskú inštaláciu Gazebo, pluginu `ardupilot_gazebo`, ArduPilot S
 a MAVProxy. Tieto komponenty sa týmto repozitárom neinštalujú.
 
 ```bash
-git clone --branch zadanie2-lrs https://github.com/LubosValkovic/LRS.git LRS-devel
-cd LRS-devel
+git clone --branch zadanie2-lrs https://github.com/LubosValkovic/LRS.git LRS-URK2
+cd LRS-URK2
 
 # Absolútna cesta k existujúcemu školskému workspace s dátami:
 LRS_DATA_ROOT=/home/user/gitLRS/LRS-URK
@@ -123,7 +245,8 @@ ln -s "$LRS_DATA_ROOT/worlds" worlds
 ```
 
 Pripojené dáta musia obsahovať `maps/FEI_LRS_PCD/map.pcd`, modely pre dané svety
-a súbory `worlds/fei_lrs_gazebo.world` a `worlds/fei_lrs_outdoor.world`.
+a súbory `worlds/fei_lrs_gazebo.world`, `worlds/fei_lrs_outdoor.world` a pre
+Assignment 2 aj `worlds/fei_lrs_precision_landing.world` s kamerami a rovermi.
 Symlinky ignoruje Git. Mapy, point cloudy, modely, svety a rosbagy sa do vetvy
 neukladajú. Samotné zostavenie balíka tieto dáta nepotrebuje.
 
@@ -140,12 +263,14 @@ Z koreňa repozitára, v termináli so systémovým Python prostredím:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-colcon build --symlink-install --packages-select assignment1_mission
+colcon build --symlink-install --packages-select assignment1_mission assignment2_rover
 source install/setup.bash
 ros2 pkg executables assignment1_mission
+ros2 pkg executables assignment2_rover
 ```
 
-Zaregistrované príkazy sú `plan3d`, `indoor` a `outdoor`. Po zmene zdrojových
+Assignment 1 registruje `plan3d`, `indoor` a `outdoor`; Assignment 2 registruje
+`sitl`, `telemetry_setup` a `check_bringup`. Po zmene zdrojových
 súborov zopakuj zostavenie. Python prostredie pre SITL používaj v jeho vlastnom
 termináli.
 
@@ -293,12 +418,14 @@ S pripojenou externou mapou a zostaveným balíkom:
 ```bash
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
-/usr/bin/python3 -m pytest -q src/assignment1_mission/test
+/usr/bin/python3 -m pytest -q src/assignment1_mission/test src/assignment2_rover/test
 ```
 
 Testy overujú plánovanie, CSV, súradnicové prevody a riadenie misie.
 Riadiace testy používajú simulované správy a odpovede služieb; živú simuláciu
-nespúšťajú.
+nespúšťajú. Kontroly Assignmentu 2 navyše overujú skutočné ROS doručenie v
+oddelenej testovacej doméne, nesprávne SYSID, chýbajúce či neplatné vstupy,
+zastavené časové značky a obnovenie nastavenia telemetrie po strate spojenia.
 
 Existujúce nástroje čítajú externé rosbagy. Potrebujú `rosbag2_py` z prostredia
 ROS a Matplotlib. Napríklad porovnanie outdoor trás:

@@ -1,0 +1,3 @@
+# MAVROS receives MAVLink 2 directly from SERIAL0, without MAVProxy.
+# telemetry_setup requests streams through MAV_CMD_SET_MESSAGE_INTERVAL.
+SERIAL0_PROTOCOL 2
