@@ -21,8 +21,8 @@ sledovaní nepristáva.
 
 **Stav prípravy:** táto vetva obsahuje hotový kód Assignmentu 1, zadanie,
 prezentáciu, školský randomizér a balík `assignment2_rover` pre spustenie dvoch
-dronov a pripojenie kamier. Detekcia značiek a roverový riadiaci uzol patria do
-nasledujúcich krokov.
+dronov, pripojenie kamier a detekciu vlastnej ArUco značky. Prevod detekcie do
+ENU a roverový letový riadiaci uzol patria do nasledujúcich krokov.
 
 ### Krok 1 — oddelenie komunikácie dronov: hotovo
 
@@ -173,8 +173,93 @@ Lokálny report s počtami správ, frekvenciami a kalibráciou je
 [`log/step2_final_pedcbjy9/bringup.json`](log/step2_final_pedcbjy9/bringup.json),
 výsledky testov sú vedľa v `pytest.xml`. Priečinok `log` sa neukladá do Gitu.
 Frekvencie závisia od výkonu počítača; počas spomalenia simulácie boli nižšie.
-Obrazy zatiaľ používajú čas Gazebo, MAVROS čas počítača; ich zjednotenie pred
-časovým priraďovaním detekcií k polohe patrí do kroku 4.
+Obrazy používajú čas Gazebo, MAVROS čas počítača. Krok 3 pripája `/clock` pre
+obrazový detektor; zjednotenie s časom MAVROS pred priraďovaním polohy patrí
+do kroku 4.
+
+### Krok 3 — detekcia vlastnej značky: hotovo
+
+Číslovanie týchto krokov vychádza z [nášho plánu](PLAN.md). Tu pripravujeme
+obrazový vstup pre budúci roverový riadiaci uzol: štyri rohy vlastnej značky
+v pixeloch. Vzlet a vyhľadávací let zo sekcie §2 zadania patria do kroku 5.
+
+`MarkerVision` z [vision.py](src/assignment2_rover/assignment2_rover/vision.py)
+sa dá pripojiť k existujúcemu `FlightNode`. Samostatný uzol `marker_detector`
+umožňuje overiť kameru a detekciu pred pripojením letovej logiky:
+
+- `cv_bridge` prevedie správu `Image` na sivý obraz; OpenCV hľadá `DICT_4X4_50`.
+  Používa dostupné API: tu overené OpenCV 4.6 s `detectMarkers`, pri novšom
+  rozhraní `ArucoDetector`. [Dokumentácia OpenCV 4.6](https://docs.opencv.org/4.6.0/d9/d6a/group__aruco.html),
+  [aktuálne rozhranie detekcie](https://docs.opencv.org/4.x/d5/dae/tutorial_aruco_detection.html).
+- SYSID musí zodpovedať `mavros/target_system_id`, ktorý uzol pravidelne
+  overuje. Cudzie značky sa môžu objaviť v diagnostike, ale nevytvoria cieľ.
+  Nejednoznačná detekcia viacerých značiek s vlastným ID sa tiež odmietne.
+- Vlastná značka sa potvrdí po troch po sebe idúcich **spracovaných** snímkach.
+  Snímka bez vlastnej značky alebo neplatný vstup prerušia potvrdzovanie.
+- Odber obrazu má hĺbku 1 a jednosnímkovú schránku: nová čakajúca snímka
+  nahradí staršiu. Kontroluje sa formát, časová značka, vek pred aj po
+  spracovaní a geometria rohov. Opakované, staré a budúce snímky sa zahodia.
+- OpenCV beží v samostatnej callback skupine, mimo zámku `FlightNode`.
+  Štyri vlákna executora umožňujú súbežný príjem obrazu, spracovanie,
+  diagnostiku a letové časovače. Watchdog používa monotónny čas a nechá
+  detekciu vypršať aj pri zastavení simulácie.
+
+Po zostavení a načítaní prostredia spusti zostavu z kroku 2 a v ďalšom
+termináli jeden detektor:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+ros2 launch assignment2_rover detector.launch.py vehicle:=1
+```
+
+Launch nastaví `/drone_1`, SYSID 1 a `use_sim_time:=true`; čas Gazebo prichádza
+cez nový jednosmerný most `/clock`. Pre druhý namespace slúži `vehicle:=2`.
+Dron stojaci na zemi môže hlásiť `WAIT_IMAGE`: značka musí byť v zornom poli
+nadol orientovanej kamery. Spustenie detektora neposiela letové príkazy.
+
+| Parameter / launch argument | Predvolené | Význam |
+|---|---:|---|
+| `vehicle` | 1 | Launch vyberie namespace a zodpovedajúci parameter `sysid`. |
+| `confirm_frames` | 3 | Počet po sebe idúcich spracovaných detekcií vlastného ID. |
+| `max_frame_age` | 0,5 s | Najvyšší vek od zachytenia podľa času Gazebo aj od príjmu podľa času počítača. |
+| `processing_hz` | 20 | Horná frekvencia spracovania; skutočná závisí od času detekcie a príchodu obrazu. |
+
+Hodnoty sa nastavujú pri spustení a počas behu sú iba na čítanie. Napríklad:
+
+```bash
+ros2 launch assignment2_rover detector.launch.py vehicle:=1 \
+  confirm_frames:=5 max_frame_age:=0.4 processing_hz:=15.0
+
+ros2 topic echo /drone_1/marker_detector/status
+ros2 topic echo /drone_1/marker_detector/corners
+```
+
+`~/status` je `diagnostic_msgs/msg/DiagnosticArray`: zobrazuje `WAIT_ID`,
+`WAIT_IMAGE`, `CANDIDATE` alebo `CONFIRMED`, posledné videné ID, počet spracovaní,
+zahodení a nahradených snímok. `last_rejection` uchováva dôvod posledného
+zahodenia. `overwritten` môže bežne rásť pri 30 Hz kamere a 20 Hz spracovaní.
+
+`~/corners` je `geometry_msgs/msg/PolygonStamped` a publikuje sa pri novej
+potvrdenej detekcii vlastného ID. Hlavička ostáva z obrazu; štyri body majú
+`x, y` v pixeloch a `z = 0`. Zachováva sa poradie rohov dekódovanej značky
+z OpenCV. Vlastné ID je pevne určené SYSID uzla a uvedené v diagnostike.
+Pre budúce riadenie poskytuje `snapshot()` čerstvú detekciu vrátane SYSID,
+rozmerov obrazu a času príjmu; po vypršaní vracia `None`.
+
+**Overené 18. 11. 2026:** prešlo **86 testov** (73 predchádzajúcich + 13
+nových). Test so skutočnými ROS správami overil, že počas umelo zablokovaného
+spracovania obrazu ďalej prichádzajú setpointy zo spoločného `FlightNode`.
+Tento test používa oddelenú ROS doménu a simulované údaje bez autopilota.
+
+V dočasnej testovacej kópii školského sveta bola kamera dronu 1 zafixovaná
+vo výške 5 m nad dvoma pôvodnými modelmi roverov. Z reálneho obrazu Gazebo
+sa detegovali obe textúry ID 1 a 2; ROS výstup obsahoval iba rohy ID 1.
+Po odstránení roveru 1 ostalo viditeľné ID 2 a počas ďalších 3 s neprišiel
+žiadny cieľ. Oba SITL zostali pripojené a nearmované. Výsledok obrazovej
+kontroly je [`log/step3_live_g6vrb7pm/vision.json`](log/step3_live_g6vrb7pm/vision.json),
+surový obraz `both_markers.png` a výsledky testov `pytest.xml` sú vedľa.
+Táto kontrola overuje obrazové spracovanie; autonómny let sa overí v kroku 5.
 
 Nové časti Assignmentu 2 sú pripojenie dvoch kamier, detekcia vlastného ArUco ID,
 prevod detekcie do ENU, vyhľadávanie, sledovanie a návrat k vyhľadávaniu pri
@@ -270,7 +355,7 @@ ros2 pkg executables assignment2_rover
 ```
 
 Assignment 1 registruje `plan3d`, `indoor` a `outdoor`; Assignment 2 registruje
-`sitl`, `telemetry_setup` a `check_bringup`. Po zmene zdrojových
+`sitl`, `telemetry_setup`, `check_bringup` a `marker_detector`. Po zmene zdrojových
 súborov zopakuj zostavenie. Python prostredie pre SITL používaj v jeho vlastnom
 termináli.
 

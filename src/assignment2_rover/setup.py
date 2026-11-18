@@ -21,11 +21,12 @@ setup(
     zip_safe=True,
     maintainer='STU FEI URK',
     maintainer_email='lrs@fei.stuba.sk',
-    description='Assignment 2 rover simulation and input verification',
+    description='Assignment 2 rover simulation, ArUco perception and input verification',
     license='MIT',
     entry_points={'console_scripts': [
         'sitl = assignment2_rover.sitl:main',
         'telemetry_setup = assignment2_rover.telemetry:main',
         'check_bringup = assignment2_rover.check_bringup:main',
+        'marker_detector = assignment2_rover.vision:main',
     ]},
 )

@@ -1,4 +1,10 @@
 # Observed with gz topic -l / -i in fei_lrs_precision_landing.world.
+- ros_topic_name: /clock
+  gz_topic_name: /clock
+  ros_type_name: rosgraph_msgs/msg/Clock
+  gz_type_name: gz.msgs.Clock
+  direction: GZ_TO_ROS
+  qos_profile: CLOCK
 - ros_topic_name: /drone_1/down_camera/image_raw
   gz_topic_name: /drone_1/down_camera/image_raw
   ros_type_name: sensor_msgs/msg/Image

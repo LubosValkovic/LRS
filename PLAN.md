@@ -61,7 +61,7 @@ reálneho času. Oba target SYSID boli správne a drony zostali nearmované.
 Lokálny report je `log/step2_final_pedcbjy9/bringup.json`; postup a názvy
 rozhraní sú v README. Reporty a externé dáta Git ignoruje.
 
-## 3. Detekcia vlastnej značky na jednom drone
+## 3. Detekcia vlastnej značky na jednom drone — hotovo
 
 - Spracovať obraz cez `cv_bridge` a OpenCV `DICT_4X4_50`.
 - Spracovanie obrazu oddeliť od publikovania letových setpointov.
@@ -71,14 +71,30 @@ rozhraní sú v README. Reporty a externé dáta Git ignoruje.
 **Overenie:** vlastná značka sa nájde, cudzie ID sa ignoruje a obrazové
 spracovanie neblokuje letové časovače. Najprv bez sledovania pohyblivého cieľa.
 
+**Výsledok (18. 11. 2026):** `MarkerVision` poskytuje potvrdené rohy iba
+vlastného ID, overeného proti `mavros/target_system_id`. Používa `cv_bridge`,
+`DICT_4X4_50`, tri potvrdzovacie snímky, jednosnímkovú schránku a samostatné
+callback skupiny. Kontroluje formát a čerstvosť pred aj po OpenCV; staré,
+opakované a budúce snímky zahadzuje. Nový most `/clock` a `use_sim_time`
+zjednocujú čas kamery a detektora. Letové setpointy zostávajú oddelené.
+
+Prešlo **86 testov** (73 predchádzajúcich + 13 nových), vrátane skutočných
+ROS doručení a behu setpointového časovača `FlightNode` počas zablokovaného
+obrazového spracovania. Živá obrazová kontrola v dočasnej kópii sveta s
+kamerou zafixovanou nad pôvodnými modelmi roverov detegovala obe ID 1/2
+a publikovala iba rohy ID 1. Po odstránení vlastnej značky sa ID 2 ignorovalo
+aj počas ďalších 3 s. Oba drony zostali nearmované. Lokálny report:
+`log/step3_live_g6vrb7pm/vision.json`. Ide o overenie detekcie jedného dronu;
+vyhľadávací let a spoločné letové overenie nasledujú v krokoch 5 a 6.
+
 ## 4. Prevod detekcie do lokálneho ENU
 
 - Intrinzické parametre prevziať z `camera_info` a použiť `solvePnP`.
 - Odvodiť skutočnú veľkosť detegovaného štvorca z modelu a jeho textúry.
 - Zahrnúť posun a orientáciu kamery aj úplný quaternion dronu.
 - Ošetriť časový odstup medzi obrazom a použitou polohou dronu.
-- Zjednotiť časové bázy: aktuálne obrazy používajú čas Gazebo a MAVROS
-  predvolene čas počítača; ich časové značky sa zatiaľ nesmú priamo porovnávať.
+- Zjednotiť časové bázy: kamera a detektor už používajú `/clock` z Gazebo,
+  MAVROS predvolene čas počítača; tieto značky sa zatiaľ nesmú priamo porovnávať.
 
 **Overenie:** numerické testy prevodov a kontrola pri visení nad roverom.
 Zdokumentovať odhadovanú vzdialenosť a jej chybu. Ground truth môže slúžiť
@@ -107,4 +123,4 @@ beh. Splnené body zadania označiť podľa toho, čo bolo naozaj demonštrovan�
 
 ## Aktuálny stav
 
-Hotové sú kroky 0, 1 a 2. Kroky 3–6 ešte nezačali.
+Hotové sú kroky 0, 1, 2 a 3. Kroky 4–6 ešte nezačali.
