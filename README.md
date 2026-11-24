@@ -303,6 +303,71 @@ Nové časti Assignmentu 2 sú pripojenie dvoch kamier, detekcia vlastného ArUc
 prevod detekcie do ENU, vyhľadávanie, sledovanie a návrat k vyhľadávaniu pri
 strate značky. Podrobnosti sú v [zadaní roverovej misie](assignments/assignment2/rover-find-and-follow.md).
 
+### Krok 5 — autonómne nájdenie a sledovanie roveru: hotovo pre jeden dron
+
+Po spustení Gazebo, oboch SITL a MAVROS podľa kroku 2 spusti randomizér a
+vyhľadávaciu misiu. Každý príkaz patrí do samostatného terminálu:
+
+```bash
+# Terminál 5 — pohyb oboch roverov
+scripts/randomize_rovers.py --seed 42
+
+# Terminál 6 — kamera, lokalizácia a misiu riadiaci uzol pre dron 1
+ros2 launch assignment2_rover rover_mission.launch.py vehicle:=1
+```
+
+Misia sama nastaví GUIDED, vyarmuje dron, vzlietne do výšky vyhľadávania a
+potom hľadá vlastnú značku. Sleduje iba ArUco ID zhodné so `SYSID_THISMAV`.
+Po potvrdení čerstvého bodu zo `marker_localizer` prejde do TRACKING a drží
+nastavenú výšku nad roverom. Ak bod dlhšie než timeout nepríde, zahodí starú
+polohu cieľa a pokračuje v SEARCH od aktuálneho úseku trasy.
+
+| Parameter | Predvolená hodnota | Účel |
+|---|---:|---|
+| `search_width`, `search_length` | 30 m, 30 m | Rozmery prehľadávanej oblasti okolo miesta štartu. |
+| `lane_spacing` | 5 m | Rozstup rovnobežných úsekov lawnmower trasy. |
+| `search_altitude` | 19 m | Výška skenovania; prekonáva 17,2 m kolízny obal veľkého stromu v dodanom svete. |
+| `track_altitude` | 2 m | Požadovaná výška nad odhadnutým stredom roverovej značky. |
+| `search_speed`, `tracking_speed` | 0,8 m/s, 0,6 m/s | Limity horizontálnej rýchlosti v danom režime. |
+| `target_timeout` | 1 s | Ako dlho sa drží posledný čerstvý cieľ pred návratom do SEARCH. |
+| `max_target_age` | 0,75 s | Najvyšší povolený vek časovej značky lokalizácie. |
+
+Parametre možno meniť pri spustení, napríklad `vehicle:=2 search_altitude:=18.0
+track_altitude:=2.5 tracking_speed:=0.4`. Vyhľadávacia trasa používa iba
+počiatočnú polohu MAVROS, rozmery oblasti a rozstup úsekov; nepozná polohu ani
+dráhu roveru. Vertikálny setpoint je rýchlostný: P regulátor drží požadovanú
+výšku a obmedzuje zvislú rýchlosť na ±0,5 m/s. Horizontálna rýchlosť je
+obmedzená samostatne.
+
+Priebeh možno sledovať v ďalšom termináli:
+
+```bash
+ros2 topic echo /drone_1/rover_mission/rover_status
+ros2 topic echo /drone_1/marker_localizer/status
+```
+
+Prvý topic ukazuje stav `SEARCH`, `TRACKING` alebo `ABORT`, aktuálny index
+trasy, vek cieľa a požadovanú rýchlosť. Druhý ukazuje viditeľné ID, počet
+potvrdzovacích snímok a stav kamerového spracovania. Bezpečné prerušenie:
+
+```bash
+ros2 service call /drone_1/rover_mission/abort std_srvs/srv/Trigger '{}'
+```
+
+Abort zastaví setpointy a pri pripojenom armed drone v GUIDED požiada
+ArduPilot o RTL. Sledovanie samo neprechádza do LAND.
+
+**Overené 24. 11. 2026:** zostavenie a **97 testov** prešli. Pri jednom
+aktívnom drone, druhom nearmovanom SITL a roveroch s náhodným pohybom pri
+seede 42 kamera potvrdila vlastné ID 1. Zaznamenali sa prechody
+`SEARCH → TRACKING → SEARCH → TRACKING`: pri krátkej strate obrazu vypršal
+timeout, misia opustila starý cieľ a po opätovnej detekcii pokračovala v
+sledovaní. Abort uspel a ArduPilot prešiel do RTL. Rover bol viditeľný už
+krátko po dosiahnutí vyhľadávacej výšky, preto tento beh neoveruje prejdenie
+celej lawnmower trasy. Spoločné súbežné sledovanie oboma dronmi patrí do
+kroku 6. Lokálny report je v `log/step5_live_89wiygwp/step5.json` a nie je
+priložený v Gite.
+
 ### Dodaný pohyb roverov
 
 Použi školský svet `fei_lrs_precision_landing.world` a jeho zodpovedajúce modely,

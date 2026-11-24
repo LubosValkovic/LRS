@@ -36,6 +36,7 @@ class FlightNode(Node):
         self.output_group = MutuallyExclusiveCallbackGroup()
         self.service_group = MutuallyExclusiveCallbackGroup()
         self.vehicle = self.pose = self.velocity = None
+        self.pose_frame = ''
         self.last_state = self.last_pose = self.last_velocity = 0.0
         self.mode_requested = self.arm_requested = 0.0
         self.takeoff_requested = self.land_requested = False
@@ -44,6 +45,7 @@ class FlightNode(Node):
         self.state = 'IDLE'
         self.entered = time.monotonic()
         self.desired = self.resume_target = None
+        self.velocity_setpoint = None
         self.desired_yaw = 0.0
         self.arrived_since = self.navigation_bad_since = self.landed_since = None
         self.after_land = 'DONE'
@@ -86,8 +88,10 @@ class FlightNode(Node):
             if (not all(math.isfinite(v) for v in (p.x, p.y, p.z, q.x, q.y, q.z, q.w))
                     or q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w < 1e-12):
                 self.last_pose = 0.0
+                self.pose_frame = ''
                 return
             self.pose = msg.pose
+            self.pose_frame = msg.header.frame_id
             self.last_pose = time.monotonic()
 
     def _enter(self, state):
@@ -146,6 +150,7 @@ class FlightNode(Node):
     def _fail(self, message):
         self.get_logger().error(message)
         self.desired = None
+        self.velocity_setpoint = None
         self._enter('ABORT')
         self.mode_requested = 0.0
 
@@ -252,11 +257,13 @@ class FlightNode(Node):
             return
         if self.state == 'LAND' and self.vehicle.mode not in ('GUIDED', 'LAND'):
             self.get_logger().warn(f'pilot/mode takeover: {self.vehicle.mode}; stopping mission')
+            self.velocity_setpoint = None
             self._enter('PASSIVE')
             return
         if self.state not in ('SET_MODE', 'LAND') and self.vehicle.mode != 'GUIDED':
             self.get_logger().warn(f'pilot/mode takeover: {self.vehicle.mode}; stopping setpoints')
             self.desired = None
+            self.velocity_setpoint = None
             self._enter('PASSIVE')
             return
         if self.state != 'LAND' and not self._navigation_ready(now):
@@ -289,6 +296,7 @@ class FlightNode(Node):
             return
         if self.state == 'LAND':
             self.desired = None
+            self.velocity_setpoint = None
             if not self.vehicle.armed:
                 if self.landed_since is None:
                     self.landed_since = now
@@ -328,18 +336,38 @@ class FlightNode(Node):
         if not self._can_publish():
             return False
         current_yaw = self.yaw()
-        if (current_yaw is None or not math.isfinite(current_yaw)
+        # Some legacy unit tests and downstream subclasses construct nodes
+        # without running FlightNode.__init__; default them to position mode.
+        velocity = getattr(self, 'velocity_setpoint', None)
+        valid_velocity = (velocity is None or (len(velocity) == 2
+                          and all(math.isfinite(v) for v in velocity)))
+        if (current_yaw is None or not math.isfinite(current_yaw) or not valid_velocity
                 or not all(math.isfinite(v) for v in (*self.desired, self.desired_yaw))):
             self._fail('non-finite position or yaw setpoint')
             return False
         target = PositionTarget()
         target.header.stamp = self.get_clock().now().to_msg()
         target.coordinate_frame = PositionTarget.FRAME_LOCAL_NED
-        target.type_mask = (PositionTarget.IGNORE_VX | PositionTarget.IGNORE_VY |
-                            PositionTarget.IGNORE_VZ | PositionTarget.IGNORE_AFX |
-                            PositionTarget.IGNORE_AFY | PositionTarget.IGNORE_AFZ |
-                            PositionTarget.IGNORE_YAW_RATE)
-        target.position.x, target.position.y, target.position.z = self.desired
+        if velocity is None:
+            target.type_mask = (PositionTarget.IGNORE_VX | PositionTarget.IGNORE_VY |
+                                PositionTarget.IGNORE_VZ | PositionTarget.IGNORE_AFX |
+                                PositionTarget.IGNORE_AFY | PositionTarget.IGNORE_AFZ |
+                                PositionTarget.IGNORE_YAW_RATE)
+            target.position.x, target.position.y, target.position.z = self.desired
+        else:
+            # Velocity-only control is supported by ArduPilot Guided mode.
+            # Keep the requested altitude with a bounded vertical P controller
+            # while enforcing the horizontal speed limit in the mission node.
+            altitude_error = self.desired[2] - self.position()[2]
+            vertical_velocity = max(-0.5, min(0.5, 0.8 * altitude_error))
+            if abs(altitude_error) <= 0.1:
+                vertical_velocity = 0.0
+            target.type_mask = (PositionTarget.IGNORE_PX | PositionTarget.IGNORE_PY |
+                                PositionTarget.IGNORE_PZ | PositionTarget.IGNORE_AFX |
+                                PositionTarget.IGNORE_AFY | PositionTarget.IGNORE_AFZ |
+                                PositionTarget.IGNORE_YAW_RATE)
+            target.velocity.x, target.velocity.y = velocity
+            target.velocity.z = vertical_velocity
         target.yaw = float(unwrap_near(self.desired_yaw, current_yaw))
         self.setpoint_pub.publish(target)
         return True

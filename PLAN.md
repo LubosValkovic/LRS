@@ -127,6 +127,29 @@ nešlo o autonómny let. Report je lokálny v `log/step4_live_lqejizjn/vision.js
 **Overenie:** jeden dron nájde vlastný pohyblivý rover, sleduje ho a po
 skutočnej strate obrazu prejde SEARCH → TRACKING. Skontrolovať aj abort.
 
+**Výsledok (24. 11. 2026):** `rover_mission.launch.py` spúšťa lokalizáciu
+značky aj riadiaci uzol vo vybranom namespace. Vyhľadávanie používa
+lawnmower vzor centrovaný na počiatočnej lokálnej polohe dronu; nečíta
+polohu roverov ani ich kruhové dráhy. Predvolené parametre sú oblasť 30 ×
+30 m, rozostup 5 m, výška vyhľadávania 19 m, výška sledovania 2 m,
+vyhľadávacia rýchlosť 0,8 m/s, sledovacia rýchlosť 0,6 m/s a timeout cieľa
+1 s. Výška 19 m prekonáva kolízny obal 17,2 m vysokého stromu v dodanom
+svete. Horizontálne riadenie používa obmedzené rýchlostné setpointy; vertikálna
+rýchlosť má P regulátor s limitom ±0,5 m/s. Abort zruší setpointy a pri
+pripojenom armed drone v režime GUIDED požiada ArduPilot o RTL; misia
+nepristáva.
+
+Čisté zostavenie prešlo a uspelo všetkých **97 testov** Assignmentu 1 a 2.
+Živý Gazebo/SITL test s `scripts/randomize_rovers.py --seed 42` potvrdil
+značku ID 1 a zaznamenal prechody `SEARCH → TRACKING → SEARCH → TRACKING`.
+Prvý cieľ sa objavil hneď po dosiahnutí vyhľadávacej výšky, preto misia
+nemusela preletieť celý vzor. Počas sledovania značka prirodzene na krátko
+vypadla z obrazu; timeout zahodil starý cieľ, misia sa vrátila do SEARCH a
+po opätovnej detekcii pokračovala v TRACKING. Volanie abort vrátilo úspech a
+stav ArduPilota sa zmenil na RTL. Dron 2 zostal nearmovaný. Lokálny záznam
+behu je `log/step5_live_89wiygwp/step5.json`; adresár `log` sa do Gitu
+neukladá.
+
 ## 6. Súbežné overenie dvoch dronov a dokumentácia
 
 - Spustiť dve nezávislé inštancie rovnakého riadiaceho uzla.
@@ -139,4 +162,5 @@ beh. Splnené body zadania označiť podľa toho, čo bolo naozaj demonštrovan�
 
 ## Aktuálny stav
 
-Hotové sú kroky 0, 1, 2, 3 a 4. Zostávajú kroky 5 a 6.
+Hotové sú kroky 0, 1, 2, 3, 4 a 5. Zostáva spoločné overenie dvoch dronov
+a dokumentácia v kroku 6.
