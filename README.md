@@ -173,9 +173,8 @@ Lokálny report s počtami správ, frekvenciami a kalibráciou je
 [`log/step2_final_pedcbjy9/bringup.json`](log/step2_final_pedcbjy9/bringup.json),
 výsledky testov sú vedľa v `pytest.xml`. Priečinok `log` sa neukladá do Gitu.
 Frekvencie závisia od výkonu počítača; počas spomalenia simulácie boli nižšie.
-Obrazy používajú čas Gazebo, MAVROS čas počítača. Krok 3 pripája `/clock` pre
-obrazový detektor; zjednotenie s časom MAVROS pred priraďovaním polohy patrí
-do kroku 4.
+Obrazy aj detektor používajú čas Gazebo. V kroku 4 nastavujeme rovnaký čas aj
+pre MAVROS; tým sa dajú bezpečne porovnať časové značky obrazu a polohy.
 
 ### Krok 3 — detekcia vlastnej značky: hotovo
 
@@ -260,6 +259,45 @@ Po odstránení roveru 1 ostalo viditeľné ID 2 a počas ďalších 3 s nepriš
 kontroly je [`log/step3_live_g6vrb7pm/vision.json`](log/step3_live_g6vrb7pm/vision.json),
 surový obraz `both_markers.png` a výsledky testov `pytest.xml` sú vedľa.
 Táto kontrola overuje obrazové spracovanie; autonómny let sa overí v kroku 5.
+
+### Krok 4 — poloha značky v lokálnom ENU: hotovo
+
+Spusti namiesto obyčajného detektora uzol, ktorý z potvrdených rohov vypočíta
+stred vlastnej značky v lokálnom rámci MAVROS:
+
+```bash
+ros2 launch assignment2_rover detector.launch.py vehicle:=1 estimate_position:=true
+ros2 topic echo /drone_1/marker_localizer/target
+ros2 topic echo /drone_1/marker_localizer/projection_status
+```
+
+`marker_localizer` používa maticu kamery `K` a koeficienty skreslenia `D` zo
+živého `down_camera/camera_info`. Rozmer štvorca je odvodený z modelu roveru:
+texturovaná plocha má 0,85 m a tmavý ArUco štvorec zaberá 800 z 1066 texelov,
+preto je použitá šírka `0,85 × 800 / 1066 = 0,638 m`. Konfiguráciu možno meniť
+v `src/assignment2_rover/config/projection.yaml`.
+
+Prevod z obrazového rámca kamery do lokálneho ENU zahŕňa polohu kamery 3 cm pod
+telom dronu, jej orientáciu podľa SDF modelu aj celý quaternion orientácie
+dronu z MAVROS. Poloha a orientácia dronu sa interpolujú na čas snímky
+(lineárna interpolácia polohy, SLERP quaternionu). Uzol odmietne starý údaj,
+neplatnú kalibráciu, chýbajúcu pózu v časovom intervale alebo PnP riešenie s
+veľkou reprojekčnou chybou. Jeho vstupom nie je Gazebo ground truth.
+
+Výstup `~/target` je `geometry_msgs/msg/PointStamped`; jeho hlavička zachováva
+čas snímky a rámec lokálnej polohy MAVROS. Diagnostika `~/projection_status`
+uvádza stav `WAIT_CALIBRATION`, `WAIT_POSE`, `REJECTED` alebo `VALID`, spolu s
+rozsahom, reprojekčnou chybou a použitým intervalom polôh.
+
+**Overené 24. 11. 2026:** čistá zostava oboch balíkov prešla a všetkých **91
+testov** Assignmentu 1 a 2 prešlo cez `pytest`. Numerické testy pokrývajú
+čelnú aj šikmú značku, interpoláciu pózy, úplnú orientáciu dronu a predvolené
+parametre. V Gazebo Harmonic bola kamera dronu 1 staticky umiestnená 5 m nad
+dvoma značkami. Z 30 odhadov nad roverom 1 bola priemerná odchýlka voči
+časovo spárovanej modelovej polohe **5,4 cm** (RMSE 5,4 cm; maximum 5,5 cm).
+Oba SITL zostali pripojené a nearmované. Je to geometrická kontrola pri
+pevnej polohe; autonómny let ešte nebol vykonaný. Surový report je lokálne v
+`log/step4_live_lqejizjn/vision.json`; priečinok `log` sa do Gitu neukladá.
 
 Nové časti Assignmentu 2 sú pripojenie dvoch kamier, detekcia vlastného ArUco ID,
 prevod detekcie do ENU, vyhľadávanie, sledovanie a návrat k vyhľadávaniu pri
@@ -352,10 +390,12 @@ colcon build --symlink-install --packages-select assignment1_mission assignment2
 source install/setup.bash
 ros2 pkg executables assignment1_mission
 ros2 pkg executables assignment2_rover
+colcon test --packages-up-to assignment2_rover --python-testing pytest
+colcon test-result --all --verbose
 ```
 
 Assignment 1 registruje `plan3d`, `indoor` a `outdoor`; Assignment 2 registruje
-`sitl`, `telemetry_setup`, `check_bringup` a `marker_detector`. Po zmene zdrojových
+`sitl`, `telemetry_setup`, `check_bringup`, `marker_detector` a `marker_localizer`. Po zmene zdrojových
 súborov zopakuj zostavenie. Python prostredie pre SITL používaj v jeho vlastnom
 termináli.
 

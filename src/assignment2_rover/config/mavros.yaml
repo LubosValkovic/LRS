@@ -2,3 +2,4 @@
 /**:
   ros__parameters:
     plugin_allowlist: [sys_status, sys_time, command, imu, local_position, setpoint_raw]
+    use_sim_time: true

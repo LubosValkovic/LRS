@@ -94,11 +94,27 @@ vyhľadávací let a spoločné letové overenie nasledujú v krokoch 5 a 6.
 - Zahrnúť posun a orientáciu kamery aj úplný quaternion dronu.
 - Ošetriť časový odstup medzi obrazom a použitou polohou dronu.
 - Zjednotiť časové bázy: kamera a detektor už používajú `/clock` z Gazebo,
-  MAVROS predvolene čas počítača; tieto značky sa zatiaľ nesmú priamo porovnávať.
+  MAVROS sa nastaví na rovnaký ROS čas a vypne sa FCU boot-time synchronizácia.
 
 **Overenie:** numerické testy prevodov a kontrola pri visení nad roverom.
 Zdokumentovať odhadovanú vzdialenosť a jej chybu. Ground truth môže slúžiť
 oddelenému vyhodnoteniu, nie ako vstup sledovacieho riadenia.
+
+**Výsledok (24. 11. 2026):** `marker_localizer` číta `K` a `D` z `camera_info`,
+počíta polohu stredu značky cez OpenCV `solvePnP`, interpoluje polohu MAVROS
+lineárne a orientáciu úplným quaternionom cez SLERP. Prevod zahŕňa polohu
+kamery 3 cm pod telom a jej orientáciu podľa SDF. Šírka detegovaného štvorca
+je `0,85 × 800/1066 = 0,6379 m`. MAVROS používa `/clock` a jeho časový plugin
+nepoužíva FCU boot-time synchronizáciu. Čerstvosť, rámce, interval polôh,
+pozitívna hĺbka a reprojekčná chyba sa kontrolujú pred publikovaním bodu v ENU.
+
+Čisté zostavenie oboch ROS balíkov prešlo. **91 testov** oboch assignmentov
+prešlo cez `pytest`, vrátane čelnej a šikmej projekcie, časovej interpolácie,
+úplného quaternionu a predvolených parametrov uzla. V statickej simulácii
+Gazebo s kamerou 5 m nad dvoma modelmi roverov sa z 30 odhadov značky 1
+namerala priemerná chyba 5,4 cm (RMSE 5,4 cm, maximum 5,5 cm). Ground truth
+bol použitý iba v samostatnom vyhodnotení. Oba SITL boli pripojené a nearmované;
+nešlo o autonómny let. Report je lokálny v `log/step4_live_lqejizjn/vision.json`.
 
 ## 5. Vyhľadávanie a sledovanie na jednom drone
 
@@ -123,4 +139,4 @@ beh. Splnené body zadania označiť podľa toho, čo bolo naozaj demonštrovan�
 
 ## Aktuálny stav
 
-Hotové sú kroky 0, 1, 2 a 3. Kroky 4–6 ešte nezačali.
+Hotové sú kroky 0, 1, 2, 3 a 4. Zostávajú kroky 5 a 6.

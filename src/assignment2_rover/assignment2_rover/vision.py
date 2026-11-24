@@ -253,10 +253,10 @@ class MarkerDetectorNode(Node):
         self.vision = MarkerVision(self)
 
 
-def main(args=None):
+def run_node(node_class, args=None):
     # Let callbacks finish before shutting down their clock and ROS handles.
     rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
-    node = MarkerDetectorNode()
+    node = node_class()
     executor = MultiThreadedExecutor(num_threads=4)
     executor.add_node(node)
     try:
@@ -268,3 +268,7 @@ def main(args=None):
         executor.shutdown()
         node.destroy_node()
         rclpy.try_shutdown()
+
+
+def main(args=None):
+    run_node(MarkerDetectorNode, args)

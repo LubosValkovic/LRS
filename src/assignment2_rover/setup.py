@@ -28,5 +28,6 @@ setup(
         'telemetry_setup = assignment2_rover.telemetry:main',
         'check_bringup = assignment2_rover.check_bringup:main',
         'marker_detector = assignment2_rover.vision:main',
+        'marker_localizer = assignment2_rover.localization:main',
     ]},
 )

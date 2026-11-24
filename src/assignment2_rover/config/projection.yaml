@@ -1,0 +1,12 @@
+# Geometry derived from fei_lrs_precision_landing.world and both rover textures.
+/**:
+  ros__parameters:
+    # 0.85 m textured box * 800 black-marker pixels / 1066 texture pixels.
+    marker_size: 0.6378986866791745
+    camera_translation_body: [0.0, 0.0, -0.03]
+    # Optical (right, down, forward) -> body FLU, including sensor pitch +pi/2.
+    # R_body_optical = [[0,-1,0], [-1,0,0], [0,0,-1]].
+    camera_rotation_body_optical: [0.7071067811865476, -0.7071067811865476, 0.0, 0.0]
+    max_pose_gap: 0.15
+    max_reprojection_error: 2.5
+    calibration_timeout: 2.0
