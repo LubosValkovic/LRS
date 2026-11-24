@@ -368,6 +368,95 @@ celej lawnmower trasy. Spoločné súbežné sledovanie oboma dronmi patrí do
 kroku 6. Lokálny report je v `log/step5_live_89wiygwp/step5.json` a nie je
 priložený v Gite.
 
+### Krok 6 — spoločná misia dvoch dronov
+
+Spoločná misia spúšťa rovnaký `rover_mission.launch.py` dvakrát, raz pre každý
+SYSID. Každý launch vytvorí lokalizátor vlastnej značky a riadiaci uzol vo
+vlastnom namespace. Pred letom nechaj svet bežať, over oba FCU a kamery a daj
+ArduPilot EKF čas ustáliť sa. Ak sa riadiaci uzol spustí príliš skoro, armovanie
+môže byť odmietnuté; vtedy ukonči tie uzly a spusti ich znovu až po ustálení.
+
+Po spustení Gazebo, SITL 1, SITL 2 a `bringup.launch.py`, vykonaj:
+
+```bash
+# Terminál 5 — vyber seed; použi iný seed pri opakovanom meraní
+scripts/randomize_rovers.py --seed 101
+
+# Terminál 6 — over, že oba FCU a kamery posielajú živé dáta
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+ros2 run assignment2_rover check_bringup \
+  --duration 5 --timeout 90 --output log/step6_bringup_seed101.json
+```
+
+Po úspešnom `PASS` nechaj simuláciu ešte približne 20 sekúnd bežať, aby sa
+ustálil odhad polohy. Potom spusti misie v dvoch samostatných termináloch:
+
+```bash
+# Terminál 7
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+ros2 launch assignment2_rover rover_mission.launch.py vehicle:=1
+
+# Terminál 8
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+ros2 launch assignment2_rover rover_mission.launch.py vehicle:=2
+```
+
+Oba drony autonómne prepnú `IDLE → SET_MODE → ARM → TAKEOFF → SEARCH`.
+Každý detektor prijíma iba značku s ID zhodným s vlastným SYSID. Pri jej nájdení
+prejde príslušný riadiaci uzol do `TRACKING`; ak čerstvá poloha prestane
+prichádzať, zahodí cieľ a pokračuje v `SEARCH`. Sleduj oba stavy:
+
+```bash
+ros2 topic echo /drone_1/rover_mission/rover_status
+ros2 topic echo /drone_2/rover_mission/rover_status
+```
+
+Abortuj drony samostatne a skontroluj oba MAVROS režimy:
+
+```bash
+ros2 service call /drone_1/rover_mission/abort std_srvs/srv/Trigger '{}'
+ros2 service call /drone_2/rover_mission/abort std_srvs/srv/Trigger '{}'
+ros2 topic echo /drone_1/mavros/state
+ros2 topic echo /drone_2/mavros/state
+```
+
+`armed: true` spolu s `mode: RTL` znamená, že autopilot prijal návrat domov.
+Ak chceš opakovať skúšku s iným seedom, najprv korektne ukonči obe misie,
+MAVROS, SITL aj Gazebo a spusti čerstvý svet; napríklad použi `--seed 202`.
+
+```mermaid
+flowchart LR
+  G[Gazebo: spoločný svet a dve pohyblivé rovery] --> C1[Dron 1: kamera]
+  G --> C2[Dron 2: kamera]
+  C1 --> L1[Marker localizer SYSID 1]
+  C2 --> L2[Marker localizer SYSID 2]
+  L1 -->|iba ID 1 v ENU| M1[RoverMission 1]
+  L2 -->|iba ID 2 v ENU| M2[RoverMission 2]
+  M1 -->|setpointy / abort| V1[MAVROS + ArduPilot 1]
+  M2 -->|setpointy / abort| V2[MAVROS + ArduPilot 2]
+  M1 --> S1[SEARCH ↔ TRACKING]
+  M2 --> S2[SEARCH ↔ TRACKING]
+```
+
+**Overené 24. 11. 2026:** dva spoločné behy so seedmi **101** a **202**.
+V oboch behoch oba uzly potvrdili vlastnú značku, zaznamenali aspoň jeden
+prechod `SEARCH → TRACKING → SEARCH → TRACKING` po strate a opätovnom nájdení
+a správne oddelili ID: dron 1 sledoval ID 1 a dron 2 ID 2. Abort každého uzla
+vrátil úspech a oba autopiloty prešli do `RTL`. Päťsekundová kontrola všetkých
+desiatich vstupných tokov prešla pri oboch seedoch. Pri seede 202 boli namerané
+stav 5 Hz, poloha/rýchlosť 9,99 Hz, obraz 24,28/29,30 Hz a `camera_info`
+30,30 Hz. Čisté zostavenie oboch balíkov a **97 testov** prešli. JSON
+meraní je lokálny v `log/step6_bringup_seed101.json` a
+`log/step6_bringup_seed202.json`; priečinok `log` nie je verzovaný.
+
+Tieto behy demonštrujú funkčnosť v simulátore, nie bezpečnú koordináciu dvoch
+skutočných lietadiel. Každý dron plánuje hľadanie nezávisle; systém neprideľuje
+neprekrývajúce sa oblasti a neobsahuje vyhýbanie sa druhému dronu. Samotný
+spoločný let preto nie je dôkazom bezpečnosti pri reálnom nasadení.
+
 ### Dodaný pohyb roverov
 
 Použi školský svet `fei_lrs_precision_landing.world` a jeho zodpovedajúce modely,

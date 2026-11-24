@@ -160,7 +160,28 @@ neukladá.
 **Overenie:** zostavenie a testy z čistého checkoutu a zaznamenaný spoločný
 beh. Splnené body zadania označiť podľa toho, čo bolo naozaj demonštrované.
 
+**Výsledok (24. 11. 2026):** v spoločnom Gazebo Harmonic svete bežali naraz
+dva ArduPilot SITL, dva MAVROS, dva lokalizátory značiek a dva uzly
+`RoverMission` vo vlastných namespace. Pri seede **101** aj **202** každý
+dron potvrdil iba vlastné ID (dron 1 → ID 1, dron 2 → ID 2) a oba uzly
+zaznamenali `SEARCH → TRACKING → SEARCH → TRACKING` po skutočnej strate a
+opätovnom nájdení značky. Samostatné abort služby uspeli pre oba drony a oba
+MAVROS stavy následne ukazovali `RTL`.
+
+Pri seede 101 prešla pred letom päťsekundová kontrola oboch FCU a kamier;
+pri seede 202 prešli všetky vstupné toky päťsekundovým meraním po spoločnom
+lete: stav 5 Hz, poloha/rýchlosť približne 10 Hz, obraz 24,28/29,30 Hz a
+`camera_info` 30,30 Hz. Záznamy sú lokálne v
+`log/step6_bringup_seed101.json` a `log/step6_bringup_seed202.json`.
+
+Pri druhom štarte, krátko po pripojení FCU, oba autopiloty odmietli arming.
+Príčina nebola ďalej izolovaná. Po čakaní 20 s oba drony úspešne vzlietli.
+Preto návod v README najprv čaká na živé vstupy a následne na ustálenie
+simulácie. Overenie prebehlo iba v simulátore. Riešenie nemá
+koordináciu trás ani vyhýbanie sa druhému dronu; prekrývajúce sa oblasti
+vyhľadávania preto nie sú všeobecne bezpečné pre reálne lietadlá.
+
 ## Aktuálny stav
 
-Hotové sú kroky 0, 1, 2, 3, 4 a 5. Zostáva spoločné overenie dvoch dronov
-a dokumentácia v kroku 6.
+Hotové sú kroky 0 až 6 vrátane spoločného overenia dvoch dronov a
+dokumentácie. Čisté zostavenie oboch balíkov a všetkých 97 testov prešlo.
